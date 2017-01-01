@@ -20,15 +20,38 @@
             border-collapse: collapse;
             font-family: "Lucida Console", Monaco, monospace;
         }
+
         .puzzlecell {
             border: 1px solid black;
             padding: 4px;
+            min-width: 15px;
+            height: 15px;
         }
+
         .puzzleXHeader {
+            text-align: center;
             vertical-align: bottom;
         }
+
         .puzzleYHeader {
             text-align: right;
+            vertical-align: middle;
+        }
+
+        .blankCell {
+            background-color: white;
+            content: "";
+        }
+        .filledCell {
+            background-color: black;
+            content: "";
+        }
+        .disabledCell:after {
+            background-color: white;
+            color: red;
+            content: "x";
+            text-align: center;
+            vertical-align: middle;
         }
     </style>
 
@@ -36,6 +59,15 @@
 
     <!-- code for puzzle. will go in separate .js eventually -->
     <script>
+        var clickpic = {}
+
+        clickpic.CellStateEnum = {
+            BLANK: 'blank',
+            FILLED: 'filled',
+            DISABLED: 'disabled'
+        }
+
+        clickpic.puzzleState = []
         function buildPuzzleHtml(puzzle) {
             var width = puzzle.dimensions[0]
             var height = puzzle.dimensions[1]
@@ -52,7 +84,7 @@
                 puzzleHtml += "<tr>"
                 puzzleHtml += "<td class='puzzlecell puzzleYHeader'>" + puzzle.data.y[y].join(" ") + "</td>"
                 for (x = 0; x < width; x++) {
-                    puzzleHtml += "<td class='puzzlecell' id='cell" + (y*width+x) + "'>X</td>"
+                    puzzleHtml += "<td class='puzzlecell' id='cell" + (y*width+x) + "' />"
                 }
                 puzzleHtml += "</tr>"
             }
@@ -61,21 +93,57 @@
 
             for (let i = 0; i < width * height; i++) {
                 var cell = document.getElementById('cell' + i)
-                cell.onclick = function () { cellClick(i, 0) }
-                cell.oncontextmenu = function () { cellClick(i, 1) } // (right click)
+                cell.onclick = function () {
+                    cellClick(i, 0)
+                }
+                cell.oncontextmenu = function () { // (right click)
+                    cellClick(i, 1)
+                    return false
+                }
             }
+
+            clickpic.puzzleState = new Array(height).fill(new Array(width).fill(clickpic.CellStateEnum.BLANK));
         }
         window.onload = function () { buildPuzzleHtml(testpuzzle) }
         // defining onunload ensures that .onload always runs when forward/back buttons are used
         window.onunload = function () { }
 
         function cellClick(index, button) {
-            alert([index, button]);
+            var currentState = clickpic.puzzleState[index]
+
+            var toggledValue = clickpic.CellStateEnum.BLANK
+            if (button == 0) {
+                toggledValue = clickpic.CellStateEnum.FILLED
+            } else if (button == 1) {
+                toggledValue = clickpic.CellStateEnum.DISABLED
+            }
+
+            if (currentState == toggledValue) {
+                currentState = clickpic.CellStateEnum.BLANK
+            } else {
+                currentState = toggledValue
+            }
+
+            clickpic.puzzleState[index] = currentState
+            updateCell(index)
+        }
+
+        function updateCell(index) {
+            var element = document.getElementById('cell' + index)
+            var currentState = clickpic.puzzleState[index]
+
+            if (currentState == clickpic.CellStateEnum.BLANK) {
+                element.className = "puzzlecell blankcell"
+            } else if (currentState == clickpic.CellStateEnum.FILLED) {
+                element.className = "puzzlecell filledcell"
+            } else if (currentState == clickpic.CellStateEnum.DISABLED) {
+                element.className = "puzzlecell disabledcell"
+            }
         }
     </script>
 </head>
 <body>
-    Clickpic
+    clickpic
     <hr />
 
     \/ puzzle \/<br />
