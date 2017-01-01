@@ -12,16 +12,34 @@
             },
             image: "https://danbooru.donmai.us/data/__kawashiro_nitori_touhou_drawn_by_ica__20b9c2dd44a2e5d1fff8328441aac750.jpg"
         }
+
+        // will be "solved" with only top left cell. For testing win behavior.
+        var testpuzzle2 = {
+            dimensions: [5, 5],
+            solution: [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            data: {
+                x: [[1],[1],[4],[3],[3,1]],
+                y: [[1,1],[1,1],[4],[2],[3]]
+            },
+            image: "https://danbooru.donmai.us/data/__kawashiro_nitori_touhou_drawn_by_ica__20b9c2dd44a2e5d1fff8328441aac750.jpg"
+        }
     </script>
 
     <!-- styling for puzzle elements. will go in separate .css eventually -->
     <style>
-        .puzzletable {
+        .puzzleTableLayer {
+        }
+        .puzzleImageLayer {
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        .puzzleTable {
             border-collapse: collapse;
             font-family: "Lucida Console", Monaco, monospace;
         }
 
-        .puzzlecell {
+        .puzzleCell {
             border: 1px solid black;
             padding: 4px;
             min-width: 15px;
@@ -69,28 +87,37 @@
 
         clickpic.puzzleState = []
         function buildPuzzleHtml(puzzle) {
+            clickpic.puzzle = puzzle
+
+            // preload image
+            clickpic.image = new Image()
+            clickpic.image.src = clickpic.puzzle.image
+
             var width = puzzle.dimensions[0]
             var height = puzzle.dimensions[1]
-            var puzzleHtml = "<table class='puzzletable'>"
+            var puzzleTable = "<table class='puzzleTable'>"
 
-            var xHeading = "<tr><td class='puzzlecell' />"
+            var xHeading = "<tr><td class='puzzleCell' />"
             for (x = 0; x < width; x++) {
-                xHeading += "<td class='puzzlecell puzzleXHeader'>" + puzzle.data.x[x].join("<br>") + "</td>"
+                xHeading += "<td class='puzzleCell puzzleXHeader'>" + puzzle.data.x[x].join("<br>") + "</td>"
             }
             xHeading += "</tr>"
-            puzzleHtml += xHeading
+            puzzleTable += xHeading
 
             for (y = 0; y < height; y++) {
-                puzzleHtml += "<tr>"
-                puzzleHtml += "<td class='puzzlecell puzzleYHeader'>" + puzzle.data.y[y].join(" ") + "</td>"
+                puzzleTable += "<tr>"
+                puzzleTable += "<td class='puzzleCell puzzleYHeader'>" + puzzle.data.y[y].join(" ") + "</td>"
                 for (x = 0; x < width; x++) {
-                    puzzleHtml += "<td class='puzzlecell' id='cell" + (y*width+x) + "' />"
+                    puzzleTable += "<td class='puzzleCell' id='cell" + (y * width + x) + "' />"
                 }
-                puzzleHtml += "</tr>"
+                puzzleTable += "</tr>"
             }
-            puzzleHtml += "</table>"
+            puzzleTable += "</table>"
+
+            var puzzleHtml = "<div class='puzzleTableLayer'>" + puzzleTable + "</div><div class='puzzleImageLayer' />"
             document.getElementById('clickpic').innerHTML = puzzleHtml
 
+            // set click behavior
             for (let i = 0; i < width * height; i++) {
                 var cell = document.getElementById('cell' + i)
                 cell.onclick = function () {
@@ -102,6 +129,7 @@
                 }
             }
 
+            // initialize state array
             clickpic.puzzleState = new Array(height).fill(new Array(width).fill(clickpic.CellStateEnum.BLANK));
         }
         window.onload = function () { buildPuzzleHtml(testpuzzle) }
@@ -126,6 +154,10 @@
 
             clickpic.puzzleState[index] = currentState
             updateCell(index)
+
+            var solved = checkSolution()
+            if (solved)
+                showPicture()
         }
 
         function updateCell(index) {
@@ -133,12 +165,37 @@
             var currentState = clickpic.puzzleState[index]
 
             if (currentState == clickpic.CellStateEnum.BLANK) {
-                element.className = "puzzlecell blankcell"
+                element.className = "puzzleCell blankCell"
             } else if (currentState == clickpic.CellStateEnum.FILLED) {
-                element.className = "puzzlecell filledcell"
+                element.className = "puzzleCell filledCell"
             } else if (currentState == clickpic.CellStateEnum.DISABLED) {
-                element.className = "puzzlecell disabledcell"
+                element.className = "puzzleCell disabledCell"
             }
+        }
+
+        function checkSolution() {
+            for (i = 0; i < clickpic.puzzle.solution.length; i++) {
+                if ((clickpic.puzzle.solution[i]==1) != (clickpic.puzzleState[i] == clickpic.CellStateEnum.FILLED))
+                    return false;
+            }
+            return true;
+        }
+
+        function showPicture() {
+            var element = document.getElementsByClassName('puzzleImageLayer')[0]
+
+            element.innerHTML = "<img src='" + clickpic.puzzle.image + "'/>"
+
+            element.style.opacity = op;
+            element.style.visibility = "visible"
+            var op = 0.0;  // initial opacity
+            var timer = setInterval(function () {
+                if (op >= 1) {
+                    clearInterval(timer);
+                }
+                element.style.opacity = op;
+                op += 0.02;
+            }, 10);
         }
     </script>
 </head>
