@@ -1,0 +1,1 @@
+this is just a test front end that uses dummy data instead of actually getting anything from the backend. the page should be standalone - just open it with a browser.
